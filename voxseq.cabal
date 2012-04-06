@@ -1,7 +1,7 @@
 Name:               voxseq
 Version:            0.0
 Description:        nothing
-License:            GPL
+License:            OtherLicense 
 License-file:       LICENSE
 Author:             Jeffrey Thornton
 Maintainer:         none
@@ -9,6 +9,14 @@ Build-Type:         Simple
 Cabal-Version:      >=1.2
 
 Executable voxseq
-    Main-is:        src/midi.hs
+    Main-is:        midi.hs
+    hs-source-dirs: src
     Build-Depends:  base >= 3,
-                    Convert
+                    haskell98,
+                    pure-fft,
+                    WAVE,
+                    midi,
+                    transformers,
+                    utility-ht,
+                    bytestring,
+                    event-list

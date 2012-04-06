@@ -85,13 +85,13 @@ indfreqs x = map (\ k -> x !! k) (ind x)
 melody' :: [Double] -> [(VoiceMsg.Pitch, ElapsedTime)]
 melody' a = zip (map (VoiceMsg.toPitch . (freqToScalePitch 8)) a) [1,1..]
 
-melody'' :: Double -> [Double] -> [Double] -> [(VoiceMsg.Pitch, ElapsedTime)]
-melody'' tdelta freqs peaks = zip (map (VoiceMsg.toPitch . (freqToScalePitch 8)) $ fst dumber) (snd dumber)
-	where
-	notZero x | x==0 = False | otherwise = True
-	g = filter (\ (t, f, p) -> notZero p) $ zip3 [0, tdelta..] freqs peaks
-	dumb (a,b,_) = (a,b)
-	dumber = dumb $ unzip3 g
+--melody'' :: Double -> [Double] -> [Double] -> [(VoiceMsg.Pitch, ElapsedTime)]
+--melody'' tdelta freqs peaks = zip (map (VoiceMsg.toPitch . (freqToScalePitch 8)) $ fst dumber) (snd dumber)
+--	where
+--	notZero x | x==0 = False | otherwise = True
+--	g = filter (\ (t, f, p) -> notZero p) $ zip3 [0, tdelta..] freqs peaks
+--	dumb (a,b,_) = (a,b)
+--	dumber = dumb $ unzip3 g
 
 -- a <- bla2 ("t1" ++ ".wav")
 -- let q x =  round $ mean $ take 43 $ drop (43*x) a
