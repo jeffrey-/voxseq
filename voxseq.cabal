@@ -1,0 +1,14 @@
+Name:               voxseq
+Version:            0.0
+Description:        nothing
+License:            GPL
+License-file:       LICENSE
+Author:             Jeffrey Thornton
+Maintainer:         none
+Build-Type:         Simple
+Cabal-Version:      >=1.2
+
+Executable voxseq
+    Main-is:        src/midi.hs
+    Build-Depends:  base >= 3,
+                    Convert
