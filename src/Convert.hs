@@ -1,12 +1,14 @@
 module Convert
 	( bla2
 	, timeDelta
+	, smooth
+	, smooth2
 	) 
 where
 
 import Data.Complex as Complex
 import Bits
-import Data.WAVE as WAVE
+--import Data.WAVE as WAVE
 import qualified Data.List as List (transpose, zip5, groupBy, sortBy)
 import qualified System (getArgs)
 import qualified Numeric.FFT (fft, ifft)
@@ -14,6 +16,9 @@ import qualified Numeric.FFT (fft, ifft)
 import Data.List
 import Control.Monad
 import Data.Maybe
+
+import qualified Input
+	( waveIn )
 
 
 sampleFreq :: Double
@@ -53,14 +58,12 @@ invWindow = window
 --invWindow = [1,1..]
 
 
-getSamples :: WAVE -> WAVESamples
-getSamples (WAVE h ss) = ss
+--getSamples :: WAVE -> WAVESamples
+--getSamples (WAVE h ss) = ss
 
 --
-samplesToDoubles :: WAVESamples -> [Double]
---samplesToDoubles [] = []
---samplesToDoubles (x:xs) = sampleToDouble (x !! 0) : (samplesToDoubles xs)
-samplesToDoubles = map (sampleToDouble . head)
+--samplesToDoubles :: WAVESamples -> [Double]
+--samplesToDoubles = map (sampleToDouble . head)
 
 --
 mkComplexList :: [Double] -> [Complex Double]
@@ -193,7 +196,7 @@ peakfinda x = peakloop [] (smooth2 20 x)
 bla x = (freq, peaks)
 	where
 --	(a, b) = unzip $ map transformR $ map (zipWith (*) window) $ framer frameSize overSamp (samplesToDoubles $ getSamples x)
-	(a, b) = unzip $ map (transformR . zipWith (*) window) $ framer frameSize overSamp (samplesToDoubles $ getSamples x)
+	(a, b) = unzip $ map (transformR . zipWith (*) window) $ framer frameSize overSamp x
 	q = zip a (map (map (((sampleFreq / frameSizeD) * ))) (trueBinList overSampD b))
 	freq = map maxerBound q
 	amp = map ampget a
@@ -216,7 +219,7 @@ plotList [] peaks
 -}
 
 bla2 :: String -> IO ([Double], [Double])
-bla2 = (liftM bla) . getWAVEFile
+bla2 = (liftM bla) . Input.waveIn
 
 --main = do
 --	--args <- System.getArgs

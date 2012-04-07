@@ -28,12 +28,20 @@ import Control.Monad (liftM3, )
 
 import qualified System (getArgs)
 import Data.Fixed  -- for mod', div'
+import Data.List.Split -- for splitWhen
 
 import Convert
-import MathStuff
+--import MathStuff
 
 
 --let t = Cons Serial (Ticks $ toTempo 60) [
+
+-- 'round' uses banker's rounding...
+freqtopitch_p :: (RealFrac a, Floating a) => a -> a
+freqtopitch_p x = fromIntegral fix
+	where 
+	fix = minimum [maximum [num, 0], 127]
+	num = round (12 * (logBase 2 (x / 440))) + 57
 
 -- 'round' uses banker's rounding...
 freqtopitch :: (RealFrac a, Floating a) => a -> VoiceMsg.Pitch
@@ -85,8 +93,23 @@ indfreqs x = map (\ k -> x !! k) (ind x)
 melody' :: [Double] -> [(VoiceMsg.Pitch, ElapsedTime)]
 melody' a = zip (map (VoiceMsg.toPitch . (freqToScalePitch 8)) a) [1,1..]
 
+
+--converts peaks into elapsed times
+peakET :: [Double] -> [ElapsedTime]
+peakET x = map (fromIntegral . (+)1 . length) $ splitWhen (>0) x
+
+
+melody'' :: Double -> [Double] -> [Double] -> [(VoiceMsg.Pitch, ElapsedTime)]
+melody'' tdelta freqs peaks = zip (map (VoiceMsg.toPitch . (freqToScalePitch 8)) $ snd dumber) (map (\x->div x 1) $ peakET peaks)
+	where
+	notZero x | x==0 = False | otherwise = True
+	g = filter (\ (t, f, p) -> notZero p) $ zip3 [0, tdelta..] freqs peaks
+	dumb (a,b,_) = (a,b)
+	dumber = dumb $ unzip3 g
+
+
 --melody'' :: Double -> [Double] -> [Double] -> [(VoiceMsg.Pitch, ElapsedTime)]
---melody'' tdelta freqs peaks = zip (map (VoiceMsg.toPitch . (freqToScalePitch 8)) $ fst dumber) (snd dumber)
+--melody'' tdelta freqs peaks = zip (map (VoiceMsg.toPitch . (freqToScalePitch 8)) $ fst dumber) (peakET peaks)
 --	where
 --	notZero x | x==0 = False | otherwise = True
 --	g = filter (\ (t, f, p) -> notZero p) $ zip3 [0, tdelta..] freqs peaks
@@ -110,7 +133,7 @@ melodyEvents pn mel =
 
 solo :: Int -> [(VoiceMsg.Pitch, ElapsedTime)] -> MidiFile.T
 solo pn mel =
-   MidiFile.Cons MidiFile.Parallel (MidiFile.Ticks 4)
+   MidiFile.Cons MidiFile.Parallel (MidiFile.Ticks (round (1/timeDelta))) --4)
       [EventList.cons 0
           (Event.MetaEvent $ MetaEvent.SetTempo (round mPQN)) $
        EventListTM.switchTimeR const $
@@ -121,7 +144,8 @@ solo pn mel =
 doer :: String -> IO ()
 doer name = do
 	(pitch, peak) <- bla2 (name ++ ".wav")
-	let melody = melody' (indfreqs pitch)
+--	let melody = melody' (indfreqs pitch)
+	let melody = melody'' 1 (smooth 9 pitch) [8,8..] --peak
 	B.writeFile (name ++ ".mid") (Save.toByteString (solo 16 melody))
 
 main :: IO ()

@@ -2,4 +2,4 @@
 
 runhaskell Setup configure --prefix=. --user
 runhaskell Setup build
-runhaskell Setup install
+#runhaskell Setup install

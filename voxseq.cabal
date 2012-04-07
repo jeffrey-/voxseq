@@ -19,4 +19,5 @@ Executable voxseq
                     transformers,
                     utility-ht,
                     bytestring,
-                    event-list
+                    event-list,
+                    split
