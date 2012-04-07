@@ -61,12 +61,10 @@ freqSpacing = sampleFreq / frameSizeD
 timeDelta = frameSizeD / sampleFreq / overSampD
 
 maxer (c, d)
---  | length d == 0	= 0
 	| null d	= 0
 	| otherwise	= fromMaybe 0 ((!!) d `liftM` (List.elemIndex (maximum c) c))
 
 maxerBound (c, d)
---  | (length d == 0)   = 0
 	| null d 			= 0
 	| (max<80||max>1100)= 0
 	| (otherwise)       = max
@@ -76,7 +74,6 @@ maxerBound (c, d)
 maxerFixer x = map
 
 paraMaxer (x, y)
---  | (length y == 0)   = 0
 	| null y 			= 0
 	| (max<80||max>1100)= 0
 	| (otherwise)       = max
