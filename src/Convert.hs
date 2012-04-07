@@ -20,42 +20,45 @@ import Data.Maybe
 import qualified Input
 	( waveIn )
 
+import qualified FFT
+	( fftout )
 
-sampleFreq :: Double
-sampleFreq = 44100
 
-frameSize :: Int
---frameSize = 1024*1 -- do make this a power of 2
-frameSize = 1024*1 -- do make this a power of 2
-
-overSamp :: Int
-overSamp = 4 -- do make this a power of 2
-
-freqMultiplier, ampMult :: Double
-freqMultiplier = 2**((0)/12)
-ampMult = 1 -- 4 -- 0.001
+--sampleFreq :: Double
+--sampleFreq = 44100
 --
-frameSizeD :: Double
-frameSizeD = fromIntegral frameSize
-
-overSampD :: Double
-overSampD = fromIntegral overSamp
-
-frameLen = frameSizeD / sampleFreq
-freqSpacing = sampleFreq / frameSizeD
-
---                window = -.5*cos(2.*M_PI*(double)k/(double)fftFrameSize)+.5;
---blackman = (\a0 a1 a2 x -> a0 - a1 * cos (2 * pi * x / (frameSizeD - 1)) + a2 * cos (4 * pi * x / (frameSizeD - 1)))
-blackman a0 a1 a2 x = a0 - a1 * cos (2 * pi * x / (frameSizeD - 1)) + a2 * cos (4 * pi * x / (frameSizeD - 1))
-
-window :: [Double]
---window = [1,1..]
-window = map ((0.5+) . ((-0.5)*) . cos . ((2 * pi / (frameSizeD-1))*)) (take frameSize [0,1..]) -- hann
-invWindow = window
---window = map ((0.5434782608695652+) . ((-0.45652173913043476)*) . cos . ((2 * pi / (frameSizeD-1))*)) (take frameSize [0,1..]) -- hamming 25/46 and 21/46
+--frameSize :: Int
+----frameSize = 1024*1 -- do make this a power of 2
+--frameSize = 1024*1 -- do make this a power of 2
+--
+--overSamp :: Int
+--overSamp = 4 -- do make this a power of 2
+--
+--freqMultiplier, ampMult :: Double
+--freqMultiplier = 2**((0)/12)
+--ampMult = 1 -- 4 -- 0.001
+----
+--frameSizeD :: Double
+--frameSizeD = fromIntegral frameSize
+--
+--overSampD :: Double
+--overSampD = fromIntegral overSamp
+--
+--frameLen = frameSizeD / sampleFreq
+--freqSpacing = sampleFreq / frameSizeD
+--
+----                window = -.5*cos(2.*M_PI*(double)k/(double)fftFrameSize)+.5;
+----blackman = (\a0 a1 a2 x -> a0 - a1 * cos (2 * pi * x / (frameSizeD - 1)) + a2 * cos (4 * pi * x / (frameSizeD - 1)))
+--blackman a0 a1 a2 x = a0 - a1 * cos (2 * pi * x / (frameSizeD - 1)) + a2 * cos (4 * pi * x / (frameSizeD - 1))
+--
+--window :: [Double]
+----window = [1,1..]
+--window = map ((0.5+) . ((-0.5)*) . cos . ((2 * pi / (frameSizeD-1))*)) (take frameSize [0,1..]) -- hann
 --invWindow = window
---window = map (blackman 0.42 0.5 0.08) (take frameSize [0,1..])
---invWindow = [1,1..]
+----window = map ((0.5434782608695652+) . ((-0.45652173913043476)*) . cos . ((2 * pi / (frameSizeD-1))*)) (take frameSize [0,1..]) -- hamming 25/46 and 21/46
+----invWindow = window
+----window = map (blackman 0.42 0.5 0.08) (take frameSize [0,1..])
+----invWindow = [1,1..]
 
 
 --getSamples :: WAVE -> WAVESamples
@@ -65,49 +68,76 @@ invWindow = window
 --samplesToDoubles :: WAVESamples -> [Double]
 --samplesToDoubles = map (sampleToDouble . head)
 
+----
+--mkComplexList :: [Double] -> [Complex Double]
+--mkComplexList x = zipWith id (map (Complex.:+) x) [0, 0 ..]
 --
-mkComplexList :: [Double] -> [Complex Double]
-mkComplexList x = zipWith id (map (Complex.:+) x) [0, 0 ..]
-
-mkDoubleList = map Complex.realPart
+--mkDoubleList = map Complex.realPart
+----
+--framer :: Int -> Int -> [Double] -> [[Double]]
+--framer _ _ [] = []
+--framer size overlap x = (take size x) : framer size overlap (drop (div size overlap) x)
 --
-framer :: Int -> Int -> [Double] -> [[Double]]
-framer _ _ [] = []
-framer size overlap x = (take size x) : framer size overlap (drop (div size overlap) x)
+--
+---- takes a list of sample points and returns a pair of lists - amplitudes and phases
+--transform :: [Double] -> ([Double], [Double])
+--transform x = (map Complex.magnitude rawFFT, map Complex.phase rawFFT)
+--	where
+--	rawFFT = (thefft . mkComplexList) x
+--	thefft = {-# SCC "Numeric.FFT.fft" #-} Numeric.FFT.fft
+--
+--transformR :: [Double] -> ([Double], [Double])
+--transformR x = (map (2*) {-to copy smb-} $ chop $ fst $ transform x, chop $ snd $ transform x)
+--	where
+--	chop = take (div (length x) 2 + 1)
+--
+--
+--
+--
+--trueBin :: Double -> Double -> Double -> Double
+--trueBin overSamp bin phaseDiff = overSamp * ((phaseDiff/2/pi) - (fromIntegral qpd2)/2)
+--	where
+--	qpd2 :: Int
+--	qpd2 = if qpd >= 0 then qpd + (qpd .&. 1) else qpd - (qpd .&. 1)
+--	qpd :: Int
+--	qpd = truncate((phaseDiff/pi) - (2*bin/overSamp)) -- changed from floor to ceiling because smb seems to do that
+--
+--trueBinList' :: Double -> [[Double]] -> [[Double]]
+--trueBinList' _ [x] = []
+----trueBinList' overSamp (x0:x1:xs) = map (uncurry $ trueBin overSamp) (zip [0..] (zipWith (-) x1 x0))
+----									: trueBinList' overSamp (x1:xs)
+--trueBinList' overSamp (x0:x1:xs) = zipWith (trueBin overSamp) [0..] (zipWith (-) x1 x0) : trueBinList' overSamp (x1:xs)
+--
+--trueBinList :: Double -> [[Double]] -> [[Double]]
+--trueBinList overSamp x = trueBinList' overSamp ((take (length $ head x) [0,0..]) : x)
 
 
--- takes a list of sample points and returns a pair of lists - amplitudes and phases
-transform :: [Double] -> ([Double], [Double])
-transform x = (map Complex.magnitude rawFFT, map Complex.phase rawFFT)
-	where
-	rawFFT = (thefft . mkComplexList) x
-	thefft = {-# SCC "Numeric.FFT.fft" #-} Numeric.FFT.fft
 
-transformR :: [Double] -> ([Double], [Double])
-transformR x = (map (2*) {-to copy smb-} $ chop $ fst $ transform x, chop $ snd $ transform x)
-	where
-	chop = take (div (length x) 2 + 1)
+{-  options
+-}
+frameSize :: Int
+frameSize = 1024*1 -- do make this a power of 2
+
+overSamp :: Int
+overSamp = 4 -- do make this a power of 2
 
 
+{-  TODO: make this adjust to input
+-}
+sampleFreq :: Double
+sampleFreq = 44100
 
 
-trueBin :: Double -> Double -> Double -> Double
-trueBin overSamp bin phaseDiff = overSamp * ((phaseDiff/2/pi) - (fromIntegral qpd2)/2)
-	where
-	qpd2 :: Int
-	qpd2 = if qpd >= 0 then qpd + (qpd .&. 1) else qpd - (qpd .&. 1)
-	qpd :: Int
-	qpd = truncate((phaseDiff/pi) - (2*bin/overSamp)) -- changed from floor to ceiling because smb seems to do that
+{-  easier just to give these names
+-}
+frameSizeD :: Double
+frameSizeD = fromIntegral frameSize
 
-trueBinList' :: Double -> [[Double]] -> [[Double]]
-trueBinList' _ [x] = []
---trueBinList' overSamp (x0:x1:xs) = map (uncurry $ trueBin overSamp) (zip [0..] (zipWith (-) x1 x0))
---									: trueBinList' overSamp (x1:xs)
-trueBinList' overSamp (x0:x1:xs) = zipWith (trueBin overSamp) [0..] (zipWith (-) x1 x0) : trueBinList' overSamp (x1:xs)
+overSampD :: Double
+overSampD = fromIntegral overSamp
 
-trueBinList :: Double -> [[Double]] -> [[Double]]
-trueBinList overSamp x = trueBinList' overSamp ((take (length $ head x) [0,0..]) : x)
-
+frameLen = frameSizeD / sampleFreq
+freqSpacing = sampleFreq / frameSizeD
 
 
 
@@ -195,11 +225,9 @@ peakfinda x = peakloop [] (smooth2 20 x)
 
 bla x = (freq, peaks)
 	where
---	(a, b) = unzip $ map transformR $ map (zipWith (*) window) $ framer frameSize overSamp (samplesToDoubles $ getSamples x)
-	(a, b) = unzip $ map (transformR . zipWith (*) window) $ framer frameSize overSamp x
-	q = zip a (map (map (((sampleFreq / frameSizeD) * ))) (trueBinList overSampD b))
+	q = FFT.fftout x
 	freq = map maxerBound q
-	amp = map ampget a
+	amp = map ampget $ fst $ unzip q
 	peaks = peakfinda amp
 
 {-
