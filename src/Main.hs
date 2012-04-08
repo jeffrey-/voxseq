@@ -42,7 +42,8 @@ main = do
 
 {-
 
-freq <- load freqPath; amp <- load ampPath
+freq <- load freqPath
+amp <- load ampPath
 
 plotList [] freq
 
