@@ -1,9 +1,9 @@
 module Convert
-	( bla2
-	, timeDelta
-	, smooth
-	, smooth2
-	) 
+--	( bla2
+--	, timeDelta
+--	, smooth
+--	, smooth2
+--	) 
 where
 
 import qualified Data.List as List
@@ -81,8 +81,9 @@ paraMaxer (x, y)
 		max = b - (((b-a)^2*(fb-fc))-((b-c)^2*(fb-fa))) / (((b-a)*(fb-fc))-((b-c)*(fb-fa))) / 2
 		(a, b, c) = (y !! (e - 1), y !! e, y !! (e + 1))
 		(fa, fb, fc) = (x !! (e - 1), x !! e, x !! (e + 1))
-		e' = fromMaybe 0 (List.elemIndex (maximum x) x)
-		e | e'==0 = 1 | otherwise = e'
+--		e' = fromMaybe 0 (List.elemIndex (maximum x) x)
+--		e | e'==0 = 1 | otherwise = e'
+		e = fromMaybe 1 (List.elemIndex (maximum x) x)
 
 ampget :: [Double] -> Double
 ampget = sum
@@ -146,3 +147,16 @@ bla x = (freq, peaks)
 
 bla2 :: String -> IO ([Double], [Double])
 bla2 = (liftM bla) . Input.waveIn
+
+
+
+
+toFreq :: [([Double], [Double])] -> [Double]
+toFreq = map maxerBound
+
+toAmp :: [([Double], [Double])] -> [Double]
+toAmp = (map ampget) . fst . unzip
+
+toPeak :: [([Double], [Double])] -> [Double]
+toPeak = peakfinda . toAmp
+
