@@ -1,3 +1,7 @@
+module Midi
+
+where
+
 import qualified Sound.MIDI.File      as MidiFile
 import qualified Sound.MIDI.File.Save as Save
 
@@ -98,9 +102,11 @@ melody' a = zip (map (VoiceMsg.toPitch . (freqToScalePitch 8)) a) [1,1..]
 peakET :: [Double] -> [ElapsedTime]
 peakET x = map (fromIntegral . (+)1 . length) $ splitWhen (>0) x
 
+toET :: (RealFrac a) => [a] -> [ElapsedTime]
+toET x = map (fromIntegral . round) x
 
 melody'' :: Double -> [Double] -> [Double] -> [(VoiceMsg.Pitch, ElapsedTime)]
-melody'' tdelta freqs peaks = zip (map (VoiceMsg.toPitch . (freqToScalePitch 8)) $ snd dumber) (map (\x->div x 1) $ peakET peaks)
+melody'' tdelta freqs peaks = zip (map (VoiceMsg.toPitch . (freqToScalePitch 8)) $ snd dumber) (map (\x->div x 1) $ toET peaks)
 	where
 	notZero x | x==0 = False | otherwise = True
 	g = filter (\ (t, f, p) -> notZero p) $ zip3 [0, tdelta..] freqs peaks
@@ -148,7 +154,17 @@ doer name = do
 	let melody = melody'' 1 (smooth 9 pitch) [8,8..] --peak
 	B.writeFile (name ++ ".mid") (Save.toByteString (solo 16 melody))
 
-main :: IO ()
-main = do
-	args <- System.getArgs
-	doer (head args)
+doertemp :: [Double] -> IO ()
+doertemp freq = do
+	let melody = melody'' 10 freq (replicate 100 32)
+	B.writeFile ("../test/t2.mid") (Save.toByteString (solo 16 melody))
+
+--doertemp freq = solo 16 melody
+--    where
+--        melody = melody'' 1 freq (replicate 20 1)
+
+
+--main :: IO ()
+--main = do
+--	args <- System.getArgs
+--	doer (head args)

@@ -3,6 +3,8 @@ module Main {-(main)-} where
 import Input
 import FFT
 import Convert
+import Analyze
+import Midi
 
 import Control.Monad
 
@@ -33,12 +35,21 @@ freq = liftM toFreq rawfft
 amp = liftM toAmp rawfft
 peak = liftM toPeak rawfft
 
-main = do
+cache = do
 	a <- rawfft
 	save (toFreq a) freqPath
 	save (toAmp a) ampPath
 	print "ok!" 
 
+main = do
+	freq <- load freqPath
+	amp <- load ampPath
+
+	a <- (doertemp . medNotes) freq
+
+	return a
+
+	print "ok!"
 
 {-
 
