@@ -67,7 +67,7 @@ scaleRound x
 
 freqToScalePitch :: (Integral a, Real b, RealFrac b, Floating b) => a -> b -> a
 freqToScalePitch _ 0 = 0
-freqToScalePitch s x = scaleRound top + base + 57
+freqToScalePitch s x = scaleRound top + base + 57 {- uh -} 
 	where
 	base = div' (trans + (fromIntegral s)) 12 * 12 - s
 	top = mod' (trans + (fromIntegral s)) 12
@@ -156,8 +156,13 @@ doer name = do
 
 doertemp :: [Double] -> IO ()
 doertemp freq = do
-	let melody = melody'' 10 freq (replicate 100 32)
-	B.writeFile ("../test/t2.mid") (Save.toByteString (solo 16 melody))
+	let melody = melody'' 10 freq (replicate 100 43)
+	B.writeFile ("../test/t2.mid") (Save.toByteString (solo 1 melody))
+
+
+------------------------------------------
+-- first argument of solo is instrument --
+------------------------------------------
 
 --doertemp freq = solo 16 melody
 --    where
