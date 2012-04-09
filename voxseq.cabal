@@ -1,15 +1,16 @@
-Name:               voxseq
-Version:            0.0
-Description:        nothing
-License:            OtherLicense 
-License-file:       LICENSE
-Author:             Jeffrey Thornton
-Maintainer:         none
-Build-Type:         Simple
-Cabal-Version:      >=1.2
+Name:                voxseq
+Version:             0.1
+Description:         Some day it may become an audio sequencer app that eschews keyboard input in favor of vocal input.
+Homepage:            https://github.com/jeffrey-/voxseq
+License:             AllRightsReserved
+License-file:        LICENSE
+Author:              Jeffrey Thornton
+Category:            Sound
+Build-type:          Simple
+Cabal-version:       >=1.2
 
 Executable voxseq
-    Main-is:        midi.hs
+    Main-is:        Main.hs
     hs-source-dirs: src
     Build-Depends:  base >= 3,
                     haskell98,

@@ -154,10 +154,10 @@ doer name = do
 	let melody = melody'' 1 (smooth 9 pitch) [8,8..] --peak
 	B.writeFile (name ++ ".mid") (Save.toByteString (solo 16 melody))
 
-doertemp :: [Double] -> IO ()
-doertemp freq = do
+doertemp :: String -> [Double] -> IO ()
+doertemp midPath freq = do
 	let melody = melody'' 10 freq (replicate 100 43)
-	B.writeFile ("../test/t2.mid") (Save.toByteString (solo 1 melody))
+	B.writeFile midPath (Save.toByteString (solo 1 melody))
 
 
 ------------------------------------------

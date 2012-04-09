@@ -8,44 +8,16 @@ import Midi
 
 import Control.Monad
 
-import Graphics.Gnuplot.Simple
+import qualified System
+	( getArgs )
 
---------------------------------------------
-
-{-	useful for caching fft result
--}
-load :: FilePath -> IO [Double]
-load f = do
-	s <- readFile f
-	return (read s :: [Double])
-
-
-save :: (Show a) => a -> FilePath -> IO ()
-save x f = writeFile f (show x)
-
----------------------------------------------
-
-wavPath = "../test/t2.wav"
-freqPath = "../test/t2.freq"
-ampPath = "../test/t2.amp"
-
-rawfft = liftM fftout (waveIn wavPath)
-
-freq = liftM toFreq rawfft
-amp = liftM toAmp rawfft
-peak = liftM toPeak rawfft
-
-cache = do
-	a <- rawfft
-	save (toFreq a) freqPath
-	save (toAmp a) ampPath
-	print "ok!" 
+rawfft wavPath = liftM fftout (waveIn wavPath)
 
 main = do
-	freq <- load freqPath
-	amp <- load ampPath
-
-	a <- (doertemp . medNotes) freq
+	args <- System.getArgs
+	let wavPath = head args
+	r <- rawfft wavPath
+	a <- (doertemp (wavPath ++ ".mid") . medNotes) (toFreq r)
 
 	return a
 
