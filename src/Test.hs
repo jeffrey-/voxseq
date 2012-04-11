@@ -25,9 +25,11 @@ save x f = writeFile f (show x)
 
 ---------------------------------------------
 
-wavPath = "../test/t2.wav"
-freqPath = "../test/t2.freq"
-ampPath = "../test/t2.amp"
+path = "../test/t2"
+wavPath = path ++ ".wav"
+midPath = path ++ ".mid"
+freqPath = path ++ ".freq"
+ampPath = path ++ ".amp"
 
 rawfft = liftM fftout (waveIn wavPath)
 
@@ -45,7 +47,7 @@ main = do
 	freq <- load freqPath
 	amp <- load ampPath
 
-	a <- (doertemp . medNotes) freq
+	a <- (doertemp midPath . medNotes) freq
 
 	return a
 

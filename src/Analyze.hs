@@ -20,13 +20,13 @@ chunk = List.chunk chunksize
 --unchunk = concat
 
 snapFreq :: Fractional a => ([a] -> a) -> [a] -> [a]
-snapFreq f xs = (concat . map reper . chunk) xs
+snapFreq f = concatMap reper . chunk
 	where
 	reper x = replicate (length x) (f x)
 
 medFreq = snapFreq median
 
 chunksToNotes :: Fractional a => ([a] -> a) -> [a] -> [a]
-chunksToNotes f xs = (concat . map (\ x -> [f x]) . chunk) xs
+chunksToNotes f = concatMap (\ x -> [f x]) . chunk
 
 medNotes = chunksToNotes median

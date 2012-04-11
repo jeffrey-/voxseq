@@ -67,7 +67,7 @@ mkComplexList x = zipWith id (map (Complex.:+) x) [0, 0 ..]
 -}
 framer :: Int -> Int -> [Double] -> [[Double]]
 framer _ _ [] = []
-framer size overlap x = (take size x) : framer size overlap (drop (div size overlap) x)
+framer size overlap x = take size x : framer size overlap (drop (div size overlap) x)
 
 
 {-
@@ -88,7 +88,7 @@ transformR x = (map (2*) {-to copy smb-} $ chop $ fst $ transform x, chop $ snd 
 {-
 -}
 trueBin :: Double -> Double -> Double -> Double
-trueBin overSamp bin phaseDiff = overSamp * ((phaseDiff/2/pi) - (fromIntegral qpd2)/2)
+trueBin overSamp bin phaseDiff = overSamp * ((phaseDiff/2/pi) - fromIntegral qpd2 / 2)
     where
     qpd2 :: Int
     qpd2 = if qpd >= 0 then qpd + (qpd .&. 1) else qpd - (qpd .&. 1)
@@ -108,5 +108,5 @@ trueBinList overSamp x = trueBinList' overSamp (take (length $ head x) [0,0..] :
 fftout x = q
     where
     (a, b) = unzip $ map (transformR . zipWith (*) window) $ framer frameSize overSamp x
-    q = zip a (map (map (((sampleFreq / frameSizeD) * ))) (trueBinList overSampD b))
+    q = zip a (map (map ((sampleFreq / frameSizeD) * )) (trueBinList overSampD b))
 

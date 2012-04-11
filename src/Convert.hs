@@ -62,21 +62,22 @@ timeDelta = frameSizeD / sampleFreq / overSampD
 
 maxer (c, d)
 	| null d	= 0
-	| otherwise	= fromMaybe 0 ((!!) d `liftM` (List.elemIndex (maximum c) c))
+	| otherwise	= fromMaybe 0 ((!!) d `liftM` List.elemIndex (maximum c) c)
 
 maxerBound (c, d)
 	| null d 			= 0
-	| (max<80||max>1100)= 0
-	| (otherwise)       = max
+	| max<80||max>1100  = 0
+	| otherwise         = max
 		where
-		max = fromMaybe 0 ((!!) d `liftM` (List.elemIndex (maximum c) c))
+		max = fromMaybe 0 ((!!) d `liftM` List.elemIndex (maximum c) c)
 
 maxerFixer x = map
 
+-- must not use true bin method if using this
 paraMaxer (x, y)
 	| null y 			= 0
-	| (max<80||max>1100)= 0
-	| (otherwise)       = max
+	| max<80||max>1100  = 0
+	| otherwise         = max
 	where
 		max = b - (((b-a)^2*(fb-fc))-((b-c)^2*(fb-fa))) / (((b-a)*(fb-fc))-((b-c)*(fb-fa))) / 2
 		(a, b, c) = (y !! (e - 1), y !! e, y !! (e + 1))
@@ -88,6 +89,16 @@ paraMaxer (x, y)
 ampget :: [Double] -> Double
 ampget = sum
 
+vocalMask :: (Real a) => a -> a
+vocalMask x
+	| x>80 || x<1100 = 1
+	| otherwise      = 0
+
+vocalAmp :: [([Double], [Double])] -> [Double]
+vocalAmp = map (sum . map ma . uncurry zip)
+	where
+	ma (amp, freq) = amp * vocalMask freq
+
 ampfloor' :: [Double] -> Double
 ampfloor' xs = List.sort [m x | x <- [0..4]] !! 2
 	where
@@ -95,7 +106,7 @@ ampfloor' xs = List.sort [m x | x <- [0..4]] !! 2
 	n = div (length xs) 5
 
 ampfloor :: [Double] -> [Double]
-ampfloor x = map (\ y -> y - (ampfloor' x)) x
+ampfloor x = map (\ y -> y - ampfloor' x) x
 
 {-
 amppeak :: [Double] -> [Double]
@@ -106,36 +117,36 @@ amppeak = peakloop [] 0
 -}
 
 smooth :: Fractional a => Int -> [a] -> [a]
-smooth n x = thing [] ((replicate (div n 2) (head x))++x++(replicate (div n 2) (last x)))
+smooth n x = thing [] (replicate (div n 2) (head x)++x++replicate (div n 2) (last x))
 	where
 	thing :: Fractional a => [a] -> [a] -> [a]
 	thing ys (x:xs) 
-		| length xs >= div n 2	= thing (((x + (sum $ take (n-1) xs))/(fromIntegral n)):ys) xs
+		| length xs >= div n 2	= thing (((x + sum (take (n-1) xs))/fromIntegral n):ys) xs
 		| otherwise				= reverse ys 
 
 smooth2 :: (Ord a, Fractional a) => Int -> [a] -> [a]
-smooth2 n x = thing [] (x++(replicate n (last x)))
+smooth2 n x = thing [] (x++replicate n (last x))
 	where
 	thing :: (Ord a, Fractional a) => [a] -> [a] -> [a]
 	thing ys (x:xs) 
-		| length xs >= n 	= thing ((((maximum $ x:take (n-1) xs))):ys) xs
+		| length xs >= n 	= thing (maximum (x:take (n-1) xs):ys) xs
 		| otherwise			= reverse ys 
 
 peakfindb :: [Double] -> [Double]
 peakfindb x = peakloop [] (smooth2 20 x)
 	where
 	peakloop ys (x0:x1:x2:xs)
-		| (not $ null xs) && (x0 >= x1 || x1 < x2)	= peakloop (0:ys) (x1:x2:xs)
-		| (not $ null xs) && (x0 < x1 && x1 >= x2)	= peakloop (1:ys) (x1:x2:xs)
-		| null []									= reverse (0:0:0:ys)
+		| not (null xs) && (x0 >= x1 || x1 < x2) = peakloop (0:ys) (x1:x2:xs)
+		| not (null xs) && (x0 < x1 && x1 >= x2) = peakloop (1:ys) (x1:x2:xs)
+		| otherwise                              = reverse (0:0:0:ys)
 
 peakfinda :: [Double] -> [Double]
 peakfinda x = peakloop [] (smooth2 20 x)
 	where
 	peakloop ys (x0:x1:x2:xs)
-		| (not $ null xs) && (x0 >= x1 || x1 < x2)	= peakloop (0:ys) (x1:x2:xs)
-		| (not $ null xs) && (x0 < x1 && x1 >= x2)	= peakloop (x0:ys) (x1:x2:xs)
-		| null []									= reverse (0:0:0:ys)
+		| not (null xs) && (x0 >= x1 || x1 < x2) = peakloop (0:ys) (x1:x2:xs)
+		| not (null xs) && (x0 < x1 && x1 >= x2) = peakloop (x0:ys) (x1:x2:xs)
+		| otherwise                              = reverse (0:0:0:ys)
 
 bla x = (freq, peaks)
 	where
@@ -146,7 +157,7 @@ bla x = (freq, peaks)
 
 
 bla2 :: String -> IO ([Double], [Double])
-bla2 = (liftM bla) . Input.waveIn
+bla2 = liftM bla . Input.waveIn
 
 
 
@@ -155,7 +166,8 @@ toFreq :: [([Double], [Double])] -> [Double]
 toFreq = map maxerBound
 
 toAmp :: [([Double], [Double])] -> [Double]
-toAmp = (map ampget) . fst . unzip
+--toAmp = (map ampget) . fst . unzip
+toAmp = vocalAmp
 
 toPeak :: [([Double], [Double])] -> [Double]
 toPeak = peakfinda . toAmp

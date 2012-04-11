@@ -45,14 +45,14 @@ freqtopitch_p :: (RealFrac a, Floating a) => a -> a
 freqtopitch_p x = fromIntegral fix
 	where 
 	fix = minimum [maximum [num, 0], 127]
-	num = round (12 * (logBase 2 (x / 440))) + 57
+	num = round (12 * logBase 2 (x / 440)) + 57
 
 -- 'round' uses banker's rounding...
 freqtopitch :: (RealFrac a, Floating a) => a -> VoiceMsg.Pitch
 freqtopitch x = VoiceMsg.toPitch fix
 	where 
 	fix = minimum [maximum [num, 0], 127]
-	num = round (12 * (logBase 2 (x / 440))) + 57
+	num = round (12 * logBase 2 (x / 440)) + 57
 
 scaleRound :: (RealFrac a, Integral b) => a -> b
 scaleRound x
@@ -69,9 +69,9 @@ freqToScalePitch :: (Integral a, Real b, RealFrac b, Floating b) => a -> b -> a
 freqToScalePitch _ 0 = 0
 freqToScalePitch s x = scaleRound top + base + 57 {- uh -} 
 	where
-	base = div' (trans + (fromIntegral s)) 12 * 12 - s
-	top = mod' (trans + (fromIntegral s)) 12
-	trans = 12 * (logBase 2 (x / 440)) 
+	base = div' (trans + fromIntegral s) 12 * 12 - s
+	top = mod' (trans + fromIntegral s) 12
+	trans = 12 * logBase 2 (x / 440)
 
 
 mICROSECONDS_PER_MINUTE = 60000000.0
@@ -95,7 +95,7 @@ indfreqs x = map (\ k -> x !! k) (ind x)
 
 
 melody' :: [Double] -> [(VoiceMsg.Pitch, ElapsedTime)]
-melody' a = zip (map (VoiceMsg.toPitch . (freqToScalePitch 8)) a) [1,1..]
+melody' a = zip (map (VoiceMsg.toPitch . freqToScalePitch 8) a) [1,1..]
 
 
 --converts peaks into elapsed times
@@ -103,10 +103,10 @@ peakET :: [Double] -> [ElapsedTime]
 peakET x = map (fromIntegral . (+)1 . length) $ splitWhen (>0) x
 
 toET :: (RealFrac a) => [a] -> [ElapsedTime]
-toET x = map (fromIntegral . round) x
+toET = map (fromIntegral . round)
 
 melody'' :: Double -> [Double] -> [Double] -> [(VoiceMsg.Pitch, ElapsedTime)]
-melody'' tdelta freqs peaks = zip (map (VoiceMsg.toPitch . (freqToScalePitch 8)) $ snd dumber) (map (\x->div x 1) $ toET peaks)
+melody'' tdelta freqs peaks = zip (map (VoiceMsg.toPitch . freqToScalePitch 8) $ snd dumber) $ toET peaks
 	where
 	notZero x | x==0 = False | otherwise = True
 	g = filter (\ (t, f, p) -> notZero p) $ zip3 [0, tdelta..] freqs peaks

@@ -18,11 +18,11 @@ import Data.List
 --    k (P s l) a = P (s+a) (l+1)
 
 mean :: (Fractional a) => [a] -> a
-mean x = sum x / (fromIntegral $ length x)
+mean x = sum x / fromIntegral (length x)
 
 median :: (Ord a) => [a] -> a
 median x
-	| odd len  = sort x !! (div len 2)
-	| even len = sort x !! (div len 2) {- close enough for purpose -}
+	| odd len  = sort x !! div len 2
+	| even len = sort x !! div len 2 {- close enough for purpose -}
 	where
 		len = length x
