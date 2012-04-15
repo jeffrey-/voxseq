@@ -1,9 +1,7 @@
-{-	For now, this module simply holds the waveIn function, which takes a path to
-	a wave file (as String) as input and outputs a list of samples (as [Double]) 
-	wrapped in IO.
--}
-
 module Input
+	( getInput
+	, input 
+	)
 
 where
 
@@ -13,9 +11,6 @@ import Data.WAVE
 	, getWAVEFile
 	, sampleToDouble
 	)
-
-getInput :: String -> IO WAVE
-getInput = getWAVEFile
 
 samples :: WAVE -> [Double]
 samples (WAVE h ss) = map (sampleToDouble . head) ss
@@ -32,3 +27,6 @@ sampleRate (WAVE h ss) = r h
 -- ah so dumb... TODO
 input :: Integral a => WAVE -> (a, [Double])
 input w = (fromIntegral (sampleRate w), samples w)
+
+getInput :: String -> IO WAVE
+getInput = getWAVEFile

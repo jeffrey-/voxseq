@@ -1,4 +1,5 @@
 module Analyze
+	( analysis )
 
 where
 

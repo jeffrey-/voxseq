@@ -1,4 +1,7 @@
 module Midi
+	( toMidi
+	, putMidi
+	)
 
 where
 
