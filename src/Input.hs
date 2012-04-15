@@ -4,24 +4,31 @@
 -}
 
 module Input
-	( waveIn )
+
 where
 
 import Data.WAVE
 	( WAVE (WAVE)
-	, WAVESamples
+	, WAVEHeader (WAVEHeader)
 	, getWAVEFile
 	, sampleToDouble
 	)
 
-import Control.Monad
-	( liftM )
+getInput :: String -> IO WAVE
+getInput = getWAVEFile
 
-getSamples :: WAVE -> WAVESamples
-getSamples (WAVE h ss) = ss
+samples :: WAVE -> [Double]
+samples (WAVE h ss) = map (sampleToDouble . head) ss
 
-samplesToDoubles :: WAVESamples -> [Double]
-samplesToDoubles = map (sampleToDouble . head)
+sampleRate :: WAVE -> Int
+sampleRate (WAVE h ss) = r h
+	where
+	r (WAVEHeader _ r _ _) = r
 
-waveIn :: String -> IO [Double]
-waveIn x = liftM (samplesToDoubles . getSamples) (getWAVEFile x)
+-------------------------------------------------
+-- Exported Functions
+-------------------------------------------------
+
+-- ah so dumb... TODO
+input :: Integral a => WAVE -> (a, [Double])
+input w = (fromIntegral (sampleRate w), samples w)

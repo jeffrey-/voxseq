@@ -1,23 +1,30 @@
 module Main {-(main)-} where
 
-import Input
-import FFT
-import Convert
-import Analyze
-import Midi
+import qualified Input
+import qualified FFT
+import qualified Analyze
+import qualified Midi
 
 import Control.Monad
 
 import qualified System
 	( getArgs )
 
-rawfft wavPath = liftM fftout (waveIn wavPath)
+-- Pretend to know these for now
+bps :: RealFrac a => a
+bps = 60
+
+-- audio file gets passed into main
+
+-- End
+
+
+
+f = Midi.toMidi . Analyze.analysis . Input.input
 
 main = do
-	args <- System.getArgs
-	let wavPath = head args
-	r <- rawfft wavPath
-	a <- (doertemp (wavPath ++ ".mid") . medNotes) (toFreq r)
+	wavPath <- head `liftM` System.getArgs
+	a <- Midi.putMidi (wavPath ++ ".mid") =<< (f `liftM` (Input.getInput wavPath))
 
 	return a
 
