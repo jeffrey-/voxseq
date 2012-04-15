@@ -62,13 +62,13 @@ trueBin bin phaseDiff = os * ((phaseDiff/2/pi) - fromIntegral qpd2 / 2)
 
 trueBinList' :: RealFloat a => [[a]] -> [[a]]
 trueBinList' [x] = []
-trueBinList' (x0:x1:xs) = zipWith (trueBin) (map fromIntegral [0..]) (zipWith (-) x1 x0) : trueBinList' (x1:xs)
+trueBinList' (x0:x1:xs) = zipWith trueBin (map fromIntegral [0..]) (zipWith (-) x1 x0) : trueBinList' (x1:xs)
 
 trueBinList :: RealFloat a => [[a]] -> [[a]]
 trueBinList x = trueBinList' (take (length $ head x) (map fromIntegral [0,0..]) : x)
 
 whatIsThis :: RealFloat a => [[a]] -> [[a]]
-whatIsThis = map (map ((44100 / (fromIntegral fftFrameSize)) * ))
+whatIsThis = map (map ((44100 / fromIntegral fftFrameSize) * ))
 
 maxerBound :: RealFloat a => ([a], [a]) -> a
 maxerBound (c, d)
@@ -79,11 +79,11 @@ maxerBound (c, d)
 		max = fromMaybe 0 ((!!) d `liftM` List.elemIndex (maximum c) c)
 
 priFreq :: RealFloat a => [([a], [a])] -> [a]
-priFreq t = map maxerBound $ zip (amps t) (freqs t)
+priFreq t = zipWith (curry maxerBound) zip (amps t) (freqs t)
 	where
-	amps = (fst . unzip)
+	amps = fst . unzip
 	freqs :: RealFloat a => [([a], [a])] -> [[a]]
-	freqs = (whatIsThis . trueBinList . snd . unzip)
+	freqs = whatIsThis . trueBinList . snd . unzip
 
 
 
@@ -105,7 +105,7 @@ chunksize :: Integral a => a
 chunksize = round (44100 / toRational fftFrameSize * toRational fftOverSamp * 60 / 60 / toRational chunksperbeat)
 
 chunksToNotes :: ([a] -> a) -> [a] -> [a]
-chunksToNotes f = concatMap (\ x -> [f x]) . (LSplit.chunk chunksize)
+chunksToNotes f = concatMap (\ x -> [f x]) . LSplit.chunk chunksize
 
 medNotes :: Ord a => [a] -> [a]
 medNotes = chunksToNotes median

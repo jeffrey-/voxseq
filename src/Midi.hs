@@ -27,11 +27,11 @@ import qualified Data.ByteString.Lazy as B
 --timeDelta = frameSizeD / sampleFreq / overSampD
 timeDelta = 1024 / 44100 / 4
 
-mICROSECONDS_PER_MINUTE = 60000000.0
+microsecondsPerMinute = 60000000.0
 
-bPM = 60.0
+bpm = 60.0
 
-mPQN = mICROSECONDS_PER_MINUTE / bPM
+mpqn = microsecondsPerMinute / bpm
 
 
 melody :: [Int] -> [(VoiceMsg.Pitch, ElapsedTime)]
@@ -54,7 +54,7 @@ solo :: Int -> [(VoiceMsg.Pitch, ElapsedTime)] -> MidiFile.T
 solo pn mel =
    MidiFile.Cons MidiFile.Parallel (MidiFile.Ticks (round (1/timeDelta)))
       [EventList.cons 0
-          (Event.MetaEvent $ MetaEvent.SetTempo (round mPQN)) $
+          (Event.MetaEvent $ MetaEvent.SetTempo (round mpqn)) $
        EventListTM.switchTimeR const $
        EventListMT.consTime 0 $
        melodyEvents pn mel]
@@ -69,4 +69,4 @@ toMidi :: [Int] -> B.ByteString
 toMidi pitches = Save.toByteString (solo 1 (melody pitches))
 
 putMidi :: String -> B.ByteString -> IO ()
-putMidi midPath = do B.writeFile midPath
+putMidi = B.writeFile

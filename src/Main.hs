@@ -24,7 +24,7 @@ f = Midi.toMidi . Analyze.analysis . Input.input
 
 main = do
 	wavPath <- head `liftM` System.getArgs
-	a <- Midi.putMidi (wavPath ++ ".mid") =<< (f `liftM` (Input.getInput wavPath))
+	a <- Midi.putMidi (wavPath ++ ".mid") =<< (f `liftM` Input.getInput wavPath)
 
 	return a
 
