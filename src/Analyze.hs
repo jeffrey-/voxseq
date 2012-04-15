@@ -70,16 +70,16 @@ trueBinList x = trueBinList' (take (length $ head x) (map fromIntegral [0,0..]) 
 whatIsThis :: RealFloat a => [[a]] -> [[a]]
 whatIsThis = map (map ((44100 / fromIntegral fftFrameSize) * ))
 
-maxerBound :: RealFloat a => ([a], [a]) -> a
-maxerBound (c, d)
-	| null d           = 0
+maxerBound :: RealFloat a => [a] -> [a] -> a
+maxerBound amps freqs
+--	| null freqs       = 0
 	| max<80||max>1100 = 0
 	| otherwise        = max
 		where
-		max = fromMaybe 0 ((!!) d `liftM` List.elemIndex (maximum c) c)
+		max = fromMaybe 0 ((!!) freqs `liftM` List.elemIndex (maximum amps) amps)
 
 priFreq :: RealFloat a => [([a], [a])] -> [a]
-priFreq t = zipWith (curry maxerBound) zip (amps t) (freqs t)
+priFreq t = zipWith maxerBound (amps t) (freqs t)
 	where
 	amps = fst . unzip
 	freqs :: RealFloat a => [([a], [a])] -> [[a]]
@@ -101,8 +101,11 @@ freqToPitch x = fix
 chunksperbeat :: Integral a => a
 chunksperbeat = 4
 
+samplesPerBeat :: RealFrac a => a
+samplesPerBeat = 44100 / fromIntegral fftFrameSize * fromIntegral fftOverSamp * 60 / 60
+
 chunksize :: Integral a => a
-chunksize = round (44100 / toRational fftFrameSize * toRational fftOverSamp * 60 / 60 / toRational chunksperbeat)
+chunksize = round (samplesPerBeat / toRational chunksperbeat)
 
 chunksToNotes :: ([a] -> a) -> [a] -> [a]
 chunksToNotes f = concatMap (\ x -> [f x]) . LSplit.chunk chunksize
@@ -156,5 +159,5 @@ vocalAmp = map (sum . map ma . uncurry zip)
 -- Exported Functions
 -------------------------------------------------
 
-analysis :: Integral a => (a, [Double]) -> [a]
-analysis (fr, ss) = (pitcher . priFreq . fft) ss
+analysis :: Integral a => (a, [Double]) -> [(a, a)]
+analysis (fr, ss) = zip ((pitcher . priFreq . fft) ss) (repeat (round samplesPerBeat))
