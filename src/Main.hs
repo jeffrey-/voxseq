@@ -20,7 +20,7 @@ bps = 60
 
 
 
-f = Midi.toMidi . Analyze.analysis . Input.input
+f = Midi.toMidi . Analyze.basic . Input.input
 
 main = do
 	wavPath <- head `liftM` System.getArgs

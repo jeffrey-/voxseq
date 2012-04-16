@@ -1,18 +1,21 @@
 module Analyze
-	( analysis )
+--	( analysis )
 
 where
 
 import MathStuff
 	( mean
 	, median
+	, genFindSublists
 	)
 
 import qualified FFT
 	( fullTransform )
 
 import qualified Data.List as List
-	( elemIndex )
+	( elemIndex 
+	, sort
+	)
 
 import Data.Maybe
 	( fromMaybe )
@@ -26,21 +29,34 @@ import Control.Monad
 	( liftM )
 
 import qualified Data.List.Split as LSplit
-	( chunk )
+	( chunk 
+	, wordsBy
+	)
 
 import Bits
 
 
 
 --------------------------------------------------
--- FFT
+-- Options
 --------------------------------------------------
 
-fftFrameSize :: Integral a => a
-fftFrameSize = 512*2 -- do make this a power of 2
+-- these should be powers of 2
+fftFrameSize = 1024
+fftOverSamp = 1
 
-fftOverSamp :: Integral a => a
-fftOverSamp = 1 -- do make this a power of 2
+-- filter outside this frequency range (in Hz)
+highPass :: RealFloat a => a
+highPass = 80
+
+lowPass :: RealFloat a => a
+lowPass = 1100
+
+
+
+--------------------------------------------------
+-- FFT
+--------------------------------------------------
 
 fft :: [Double] -> [([Double], [Double])]
 fft = FFT.fullTransform fftFrameSize fftOverSamp
@@ -67,52 +83,105 @@ trueBinList' (x0:x1:xs) = zipWith trueBin (map fromIntegral [0..]) (zipWith (-) 
 trueBinList :: RealFloat a => [[a]] -> [[a]]
 trueBinList x = trueBinList' (take (length $ head x) (map fromIntegral [0,0..]) : x)
 
-whatIsThis :: RealFloat a => [[a]] -> [[a]]
-whatIsThis = map (map ((44100 / fromIntegral fftFrameSize) * ))
-
 maxerBound :: RealFloat a => [a] -> [a] -> a
 maxerBound amps freqs
---	| null freqs       = 0
-	| max<80||max>1100 = 0
-	| otherwise        = max
+--	| null freqs               = 0
+	| max<highPass || max>1100 = 0
+	| otherwise                = max
 		where
 		max = fromMaybe 0 ((!!) freqs `liftM` List.elemIndex (maximum amps) amps)
 
-priFreq :: RealFloat a => [([a], [a])] -> [a]
-priFreq t = zipWith maxerBound (amps t) (freqs t)
+whatIsThis :: RealFloat a => a -> [[a]] -> [[a]]
+whatIsThis sampRate = map (map ((sampRate / fromIntegral fftFrameSize) * ))
+
+priFreq :: RealFloat a => a -> [([a], [a])] -> [a]
+priFreq sampRate t = zipWith maxerBound (amps t) (freqs t)
 	where
 	amps = fst . unzip
-	freqs :: RealFloat a => [([a], [a])] -> [[a]]
-	freqs = whatIsThis . trueBinList . snd . unzip
+	freqs = whatIsThis sampRate . trueBinList . snd . unzip
 
 
 
 --------------------------------------------------
--- Pitch Analysis
+-- Amplitude Analysis
+--------------------------------------------------
+
+vocalMask :: (RealFloat a) => a -> a
+vocalMask x
+	| x>highPass || x<lowPass = 1
+	| otherwise               = 0
+
+vocalAmp :: [([Double], [Double])] -> [Double]
+vocalAmp = map (sum . map ma . uncurry zip)
+	where
+	ma (amp, freq) = amp * vocalMask freq
+
+
+
+--------------------------------------------------
+-- Quantization
+--------------------------------------------------
+
+chunksize :: (RealFrac a, Integral b) => a -> b
+chunksize spc = round (spc * fromIntegral fftOverSamp / fromIntegral fftFrameSize)
+
+gate :: [Double] -> Double
+gate x = 1.25 * minimum (map maximum (LSplit.chunk 16 x)) -- 16 is just a guess
+
+noteHeads :: Ord a => a -> [a] -> [Int]
+noteHeads gate = genFindSublists [(<=gate), (>gate)]
+
+noteLasts :: Ord a => a -> [a] -> [Int]
+noteLasts gate = genFindSublists [(>gate), (<=gate)]
+
+quantIndex :: RealFrac a => a -> Int -> Int
+quantIndex spc = (chunksize spc *) . round . (/ (toRational $ chunksize spc)) . toRational
+
+quantize :: RealFrac a => a -> [(Double, Double)] -> [(Double, Double)]
+quantize spc x = take (length x) $ foldl wat (repeat (0, 0)) (zip indices chunks)
+	where
+	amps    = (fst . unzip) x
+	indices = (map (quantIndex spc) . noteHeads g) amps
+	chunks  = LSplit.wordsBy ((<=g) . fst) x
+	g       = gate amps
+
+	wat result (index, notes) = beg ++ zipWith maxAmp mid notes ++ end
+		where
+		maxAmp (a0, f0) (a1, f1) = if a0>=a1 then (a0, f0) else (a1, f1)
+		r   = result++(repeat (0, 0))
+		beg = take index r
+		mid = take (length notes) (drop index r)
+		end = drop (index + length notes) r
+
+
+
+--------------------------------------------------
+-- Frequency Smoothing
+--------------------------------------------------
+
+--chunksToNotes :: ([a] -> a) -> [a] -> [a]
+--chunksToNotes f = concatMap (\ x -> [f x]) . LSplit.chunk chunksize
+--
+--medNotes :: (Num a, Ord a) => [a] -> [a]
+--medNotes = chunksToNotes (fromMaybe 0 . median)
+
+mediator :: (RealFrac a, Num b, Ord b) => a -> [(b, b)] -> [(b, b)]
+mediator spc x = zipWith zfunc ((fst . unzip) x) (medList x)
+	where
+	zfunc x y | x>0 = (x, y) | otherwise = (0, 0)
+	medList = concat . map (replicate (chunksize spc) . fromMaybe 0 . median . map snd . filter fil) . LSplit.chunk (chunksize spc)
+	fil (x, y) = x>0 && y>0
+
+
+
+--------------------------------------------------
+-- Pitch Conversion
 --------------------------------------------------
 
 freqToPitch :: (Ord a, Floating a) => a -> a
-freqToPitch x = fix
+freqToPitch x = minimum [maximum [trans, 0], 127]
 	where
-	fix = minimum [maximum [num, 0], 127]
-	num = 12 * logBase 2 (x / 440) + 57
-
-
-chunksperbeat :: Integral a => a
-chunksperbeat = 4
-
-samplesPerBeat :: RealFrac a => a
-samplesPerBeat = 44100 / fromIntegral fftFrameSize * fromIntegral fftOverSamp * 60 / 60
-
-chunksize :: Integral a => a
-chunksize = round (samplesPerBeat / toRational chunksperbeat)
-
-chunksToNotes :: ([a] -> a) -> [a] -> [a]
-chunksToNotes f = concatMap (\ x -> [f x]) . LSplit.chunk chunksize
-
-medNotes :: Ord a => [a] -> [a]
-medNotes = chunksToNotes median
-
+	trans = 12 * logBase 2 (x / 440) + 57
 
 scaleRound :: (RealFrac a, Integral b) => a -> b
 scaleRound x
@@ -133,25 +202,42 @@ scalePitch s x = scaleRound top + base + 57
 	top = mod' p 12
 	p = x - 57 + fromIntegral s
 
--- this will definitely change
-pitcher :: (RealFloat a, Integral b) => [a] -> [b]
-pitcher = map (scalePitch 8) . medNotes . map freqToPitch
+freqToScalePitch :: (Integral a, RealFloat b) => a -> b -> a  -- mode=8 -> C major?
+freqToScalePitch mode = (+12) . scalePitch mode . freqToPitch
 
 
 
 --------------------------------------------------
--- Amplitude Analysis
+-- Make Notes
 --------------------------------------------------
 
-vocalMask :: (Real a) => a -> a
-vocalMask x
-	| x>80 || x<1100 = 1
-	| otherwise      = 0
-
-vocalAmp :: [([Double], [Double])] -> [Double]
-vocalAmp = map (sum . map ma . uncurry zip)
+basicNotes :: Integral a => [a] -> [(a, a)]
+basicNotes x = zip (map ((x!!) . fromIntegral) indices) (zipWith (-) (tail indices) indices)
 	where
-	ma (amp, freq) = amp * vocalMask freq
+	indices = (map fromIntegral . List.sort) (noteHeads 0 (0:x) ++ noteLasts 0 (0:x))
+
+basicNotes2 :: Integral a => [a] -> [(a, a)]
+basicNotes2 x = change 0 0 0 x
+	where
+	change k k0 p l
+		| null l    = []
+		| k==0      =             change (k+1) 0  (head l) (tail l)
+		| p/=head l = (p, k-k0) : change (k+1) k  (head l) (tail l)
+		| otherwise =             change (k+1) k0 p        (tail l)
+
+
+-------------------------------------------------
+-- Utility
+-------------------------------------------------
+
+samplesPerChunk sampRate beatsPerMinute chunksPerBeat = sampRate * 60 / beatsPerMinute / chunksPerBeat
+
+analysis :: Integral a => a -> [Double] -> [(a, a)]
+analysis sr ss = zip (map round amps) (map (freqToScalePitch 8) freqs)
+	where
+	(amps, freqs) = (unzip . mediator spc . quantize spc) 
+	                $ zip ((vocalAmp . fft) ss) ((priFreq (fromIntegral sr) . fft) ss)
+	spc = samplesPerChunk (fromIntegral sr) 60 4
 
 
 
@@ -159,5 +245,8 @@ vocalAmp = map (sum . map ma . uncurry zip)
 -- Exported Functions
 -------------------------------------------------
 
-analysis :: Integral a => (a, [Double]) -> [(a, a)]
-analysis (fr, ss) = zip ((pitcher . priFreq . fft) ss) (repeat (round samplesPerBeat))
+basic :: Integral a => (a, [Double]) -> [(a, a)]
+basic (sr, ss) = (basicNotes2 . snd . unzip . analysis sr) ss
+
+
+

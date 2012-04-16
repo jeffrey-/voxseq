@@ -9,7 +9,9 @@ import qualified Sound.MIDI.File      as MidiFile
 import qualified Sound.MIDI.File.Save as Save
 
 import Sound.MIDI.File
-	(ElapsedTime, toElapsedTime)
+	( ElapsedTime
+	, toElapsedTime
+	)
 
 import qualified Sound.MIDI.File.Event.Meta as MetaEvent
 import qualified Sound.MIDI.File.Event      as Event
@@ -26,7 +28,7 @@ import qualified Data.ByteString.Lazy as B
 
 
 --timeDelta = frameSizeD / sampleFreq / overSampD
-timeDelta = 1024 / 44100 / 4
+timeDelta = 1024 / 44100 / 1
 
 microsecondsPerMinute = 60000000.0
 
