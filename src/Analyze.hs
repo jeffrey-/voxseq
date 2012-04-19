@@ -35,6 +35,7 @@ import qualified Data.List.Split as LSplit
 
 import Bits
 
+import Debug.Trace
 
 
 --------------------------------------------------
@@ -203,7 +204,7 @@ scalePitch s x = scaleRound top + base + 57
 	p = x - 57 + fromIntegral s
 
 freqToScalePitch :: (Integral a, RealFloat b) => a -> b -> a  -- mode=8 -> C major?
-freqToScalePitch mode = (+12) . scalePitch mode . freqToPitch
+freqToScalePitch mode = scalePitch mode . freqToPitch
 
 
 
@@ -211,23 +212,25 @@ freqToScalePitch mode = (+12) . scalePitch mode . freqToPitch
 -- Make Notes
 --------------------------------------------------
 
-basicNotes :: Integral a => [a] -> [(a, a)]
-basicNotes x = zip (map ((x!!) . fromIntegral) indices) (zipWith (-) (tail indices) indices)
-	where
-	indices = (map fromIntegral . List.sort) (noteHeads 0 (0:x) ++ noteLasts 0 (0:x))
+-- map [-2, 2] to [0, 16383]
+bendTrans :: Integral a => a -> a
+bendTrans = (min 16383) . (max 0) . (*4096) . (+2)
 
-basicNotes2 :: Integral a => [a] -> [(a, a)]
-basicNotes2 x = change 0 0 0 x
+basicNotesTB :: Integral a => [a] -> [(a, (String, (a, a)))]
+basicNotesTB x = change 0 0 0 0 x
 	where
-	change k k0 p l
-		| null l    = []
-		| k==0      =             change (k+1) 0  (head l) (tail l)
-		| p/=head l = (p, k-k0) : change (k+1) k  (head l) (tail l)
-		| otherwise =             change (k+1) k0 p        (tail l)
+--	change n k o p (hx:tx) | trace ("change " ++ show n ++ " " ++ show k ++ " " ++ show o ++ " " ++ show p ++ " " ++ show hx) False = undefined
+	change _ _ _ _ [] = []
+	change n k o p (hx:tx)
+		| p==hx     =       {-no change-}                change (n+1) k o  hx tx
+		| p==0      = (n-k, ("NoteOn"   , (hx  , 90))) : change (n+1) n hx hx tx
+		| hx==0     = (n-k, ("NoteOff"  , (o   , 90))) : change (n+1) n hx hx tx
+		| otherwise = (n-k, ("PitchBend", (bendTrans (hx-o), 0 ))) : change (n+1) n o  hx tx
+
 
 
 -------------------------------------------------
--- Utility
+-- Other
 -------------------------------------------------
 
 samplesPerChunk sampRate beatsPerMinute chunksPerBeat = sampRate * 60 / beatsPerMinute / chunksPerBeat
@@ -245,8 +248,8 @@ analysis sr ss = zip (map round amps) (map (freqToScalePitch 8) freqs)
 -- Exported Functions
 -------------------------------------------------
 
-basic :: Integral a => (a, [Double]) -> [(a, a)]
-basic (sr, ss) = (basicNotes2 . snd . unzip . analysis sr) ss
+basic :: Integral a => (a, [Double]) -> [(a, (String, (a, a)))]
+basic (sr, ss) = (basicNotesTB . snd . unzip . analysis sr) ss
 
 
 
