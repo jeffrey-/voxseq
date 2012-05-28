@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cabal configure --enable-library-profiling --enable-executable-profiling
+cabal configure #--enable-library-profiling --enable-executable-profiling
 cabal build
 cabal copy --destdir=/tmp/voxseq
 mkdir target

@@ -9,6 +9,12 @@ import qualified Numeric.FFT as FFT
 
 import Data.Complex as Complex
 
+import Control.Parallel.Strategies
+	( parBuffer
+	, runEval
+	, rdeepseq
+	)
+
 
 
 --------------------------------------------------
@@ -58,9 +64,13 @@ transform x = (map Complex.magnitude rawFFT, map Complex.phase rawFFT)
 --    rawFFT = (V.fromVector . fft (length x) . V.vector . mkComplexList) x
 
 transformR :: [Double] -> ([Double], [Double])
-transformR x = (map (2*) {-to copy smb-} $ chop $ fst $ transform x, chop $ snd $ transform x)
-    where
-    chop = take (div (length x) 2 + 1)
+--transformR x = (map (2*) {-to copy smb-} $ chop $ fst $ transform x, chop $ snd $ transform x)
+transformR x = ( (map (2*) {-to copy smb-} . chop) amp
+               , chop phase
+               )
+	where
+	(amp, phase) = transform x
+	chop = take (div (length x) 2 + 1)
 
 
 
@@ -69,5 +79,9 @@ transformR x = (map (2*) {-to copy smb-} $ chop $ fst $ transform x, chop $ snd 
 --------------------------------------------------
 
 fullTransform :: Integral a => a -> a -> [Double] -> [([Double], [Double])]
-fullTransform fs os x = map (transformR . zipWith (*) (window fs)) (framer fs os x)
+--fullTransform fs os x = map (transformR . zipWith (*) (window fs)) (framer fs os x)
+fullTransform fs os x = runEval $ parBuffer 2 rdeepseq $ map go y
+	where
+	go = (transformR . zipWith (*) (window fs))
+	y  = (framer fs os x)
 

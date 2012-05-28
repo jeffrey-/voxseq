@@ -13,8 +13,8 @@ Executable voxseq
     Main-is:        Main.hs
     hs-source-dirs: src
 --    ghc-options:    -O3
---    ghc-options:    -O3 -threaded -with-rtsopts=-N2 -rtsopts
-    ghc-options:    -O3 -auto -with-rtsopts=-prof -rtsopts
+    ghc-options:    -O3 -threaded -with-rtsopts=-N2 -rtsopts
+--    ghc-options:    -O3 -auto -with-rtsopts=-prof -rtsopts
     Build-Depends:  base >= 3,
                     haskell98,
                     pure-fft,
@@ -24,4 +24,5 @@ Executable voxseq
                     utility-ht,
                     bytestring,
                     event-list,
-                    split
+                    split,
+                    parallel
