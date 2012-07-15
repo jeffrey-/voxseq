@@ -225,7 +225,7 @@ basicNotesTB = change 0 0 0 0
 --	change n k o p (hx:tx) | trace ("change " ++ show n ++ " " ++ show k ++ " " ++ show o ++ " " ++ show p ++ " " ++ show hx) False = undefined
 	change _ _ _ _ [] = []
 	change n k o p (hx:tx)
-		| p==hx     = Continue  (n-k)                                   : change (n+1) k o  hx tx
+		| p==hx     = {-no change-}                                       change (n+1) k o  hx tx
 		| p==0      = NoteOn    (n-k) (fromIntegral hx) 90              : change (n+1) n hx hx tx
 		| hx==0     = NoteOff   (n-k) (fromIntegral o ) 90              : change (n+1) n hx hx tx
 		| otherwise = PitchBend (n-k) (fromIntegral $ bendTrans (hx-o)) : change (n+1) n o  hx tx

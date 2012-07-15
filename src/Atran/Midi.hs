@@ -106,10 +106,10 @@ melodyEvents mel = ELTB.fromPairList $ concatMap ef mel
 	                             ]
 
 	ef (PitchBend t x)        =  [
-		                           ( MF.toElapsedTime t
-		                           , event $ VcMsg.PitchBend (toPitchBendRange x)
-		                           )
-		                         ]
+	                               ( MF.toElapsedTime t
+	                               , event $ VcMsg.PitchBend (toPitchBendRange x)
+	                               )
+	                             ]
 
 
 toMidiFile :: Melody -> MF.T
