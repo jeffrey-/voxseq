@@ -11,10 +11,11 @@ Cabal-version:       >=1.2
 
 Executable voxseq
     Main-is:        Main.hs
-    hs-source-dirs: src
+    hs-source-dirs: src,
+                    src/Atran
 --    ghc-options:    -O3
-    ghc-options:    -O3 -threaded -with-rtsopts=-N2 -rtsopts
---    ghc-options:    -O3 -auto -with-rtsopts=-prof -rtsopts
+--    ghc-options:    -O3 -threaded -with-rtsopts=-N2 -rtsopts
+    ghc-options:    -O3 -auto-all -prof -with-rtsopts=-prof -rtsopts
     Build-Depends:  base >= 3,
                     haskell98,
                     pure-fft,

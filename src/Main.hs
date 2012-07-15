@@ -1,7 +1,6 @@
 module Main {-(main)-} where
 
 import qualified Input
-import qualified FFT
 import qualified Analyze
 import qualified Midi
 
@@ -23,13 +22,13 @@ bps = 60
 f = Midi.toMidi . Analyze.basic . Input.input
 
 main = do
-	wavPath <- head `liftM` System.getArgs
---	p <- print "converting " ++ wavPath ++ " to MIDI file at " ++ wavPath ++ ".mid"
-	a <- Midi.putMidi (wavPath ++ ".mid") =<< (f `liftM` Input.getInput wavPath)
+	wavPath <- liftM head System.getArgs
+	putStrLn $ "converting " ++ wavPath ++ " to MIDI file at " ++ wavPath ++ ".mid"
+	a <- liftM f (Input.getInput wavPath) >>= Midi.putMidi (wavPath ++ ".mid")
+	putStrLn "ok!"
 
 	return a
 
-	print "ok!"
 
 {-
 
